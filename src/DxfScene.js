@@ -2089,12 +2089,47 @@ export class DxfScene {
 
     /** Resolve entity color.
      *
-     * @param entity
+     * @param {Entity} entity
      * @param blockCtx {?BlockContext}
      * @return {number} RGB color value. For block entity it also may be one of ColorCode values
      *  which are resolved on block instantiation.
      */
     _GetEntityColor(entity, blockCtx = null) {
+        if (this.options.colorOverrides) {
+            const colorOverrides = this.options.colorOverrides
+
+            if (typeof colorOverrides === "number") {
+                return colorOverrides
+            }
+
+            if (Array.isArray(colorOverrides)) {
+                const colorOverride = colorOverrides.find((co) => {
+                    let isMatched = false
+                    if (co.hasOwnProperty("layerName")) {
+                        isMatched = co.layerName === entity.layer
+
+                        if (!isMatched) return false
+                    }
+
+                    if (co.hasOwnProperty("entityType")) {
+                        isMatched = co.entityType === entity.type
+                    }
+
+                    return isMatched
+                })
+
+                if (colorOverride && typeof colorOverride.color === "number") {
+                    return colorOverride.color
+                }
+
+                const fallbackColorOverride = colorOverrides.find((co) => typeof co.fallbackColor === "number")
+
+                if (fallbackColorOverride) {
+                    return fallbackColorOverride.fallbackColor
+                }
+            }
+        }
+
         let color = ColorCode.BY_LAYER
         if (entity.colorIndex === 0) {
             color = ColorCode.BY_BLOCK
