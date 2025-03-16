@@ -91,6 +91,7 @@ export class DxfViewer {
 
         this.canvas.addEventListener("pointerdown", this._OnPointerEvent.bind(this))
         this.canvas.addEventListener("pointerup", this._OnPointerEvent.bind(this))
+        this.canvas.addEventListener("pointermove", this._OnPointerEvent.bind(this))
 
         this.Render()
 
