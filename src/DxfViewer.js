@@ -771,17 +771,27 @@ class Batch {
         if (batch.hasOwnProperty("chunks")) {
             this.chunks = []
             for (const rawChunk of batch.chunks) {
-
-                const verticesArray =
+                // Convert 2D vertices to 3D to compute bounding box.
+                // TODO: This is not optimal, need to make this optional
+                const verticesArray2D =
                     new Float32Array(scene.vertices,
                                      rawChunk.verticesOffset * Float32Array.BYTES_PER_ELEMENT,
                                      rawChunk.verticesSize)
+                const verticesArray = new Float32Array(verticesArray2D.length / 2 * 3)
+
+                for (let i = 0, j = 0; i < verticesArray2D.length; i += 2, j += 3) {
+                    verticesArray[j] = verticesArray2D[i]
+                    verticesArray[j + 1] = verticesArray2D[i + 1]
+                    verticesArray[j + 2] = 0
+                }
+
                 const indicesArray =
                     new Uint16Array(scene.indices,
                                     rawChunk.indicesOffset * Uint16Array.BYTES_PER_ELEMENT,
                                     rawChunk.indicesSize)
+
                 this.chunks.push({
-                    vertices: new three.BufferAttribute(verticesArray, 2),
+                    vertices: new three.BufferAttribute(verticesArray, 3),
                     indices: new three.BufferAttribute(indicesArray, 1)
                 })
             }
@@ -865,7 +875,16 @@ class Batch {
             throw new Error("Unexpected geometry type:" + this.key.geometryType)
         }
 
-        function CreateObject(vertices, indices) {
+
+        /**
+         * Creates a 3D object using the provided vertices, indices, and optional handle.
+         *
+         * @param {THREE.BufferAttribute | THREE.InterleavedBufferAttribute} vertices - The vertex positions for the geometry.
+         * @param {THREE.BufferAttribute | THREE.InterleavedBufferAttribute | null} indices - The indices for the geometry, or null if not applicable.
+         * @param {string | null} [handle=null] - If defined a separate material is cloned for this object.
+         * @returns {THREE.Object3D} The created 3D object with the specified geometry and material.
+         */
+        function CreateObject(vertices, indices, handle = null) {
             const geometry = instanceBatch ?
                 new three.InstancedBufferGeometry() : new three.BufferGeometry()
             geometry.setAttribute("position", vertices)
@@ -873,16 +892,25 @@ class Batch {
             if (indices) {
                 geometry.setIndex(indices)
             }
-            const obj = new objConstructor(geometry, material)
+
+            let obj
+
+            if (!!handle) {
+                obj = new objConstructor(geometry, material.clone())
+            } else {
+                obj = new objConstructor(geometry, material)
+            }
+
             obj.frustumCulled = false
             obj.matrixAutoUpdate = false
             obj._dxfViewerLayer = layer
+            obj.name = handle ?? ''
             return obj
         }
 
         if (this.chunks) {
             for (const chunk of this.chunks) {
-                yield CreateObject(chunk.vertices, chunk.indices)
+                yield CreateObject(chunk.vertices, chunk.indices, this.key.handle)
             }
         } else {
             yield CreateObject(this.vertices)

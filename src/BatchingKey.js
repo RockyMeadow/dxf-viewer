@@ -6,17 +6,19 @@ export class BatchingKey {
      *  without layer specified).
      * @param blockName {?String} Block name if applicable. If specified and geometryType is not
      *  BLOCK_INSTANCE, the batch is part of block definition. Otherwise it is block instance.
+     * @param handle {?string} Handle of the entity.
      * @param geometryType {?number} One of BatchingKey.GeometryType.
      * @param color {number} Color ARGB value.
      * @param lineType {?number} Line type ID, null for non-lines. Zero is default type (solid
      *  line).
      */
-    constructor(layerName, blockName, geometryType, color, lineType) {
+    constructor(layerName, blockName, geometryType, color, lineType, handle) {
         this.layerName = layerName ?? null
         this.blockName = blockName ?? null
         this.geometryType = geometryType ?? null
         this.color = color
         this.lineType = lineType ?? null
+        this.handle = handle ?? null
     }
 
     /** Comparator function. Fields lexical order corresponds to the constructor arguments order.
@@ -39,7 +41,11 @@ export class BatchingKey {
         if (c !== 0) {
             return c
         }
-        return CompareValues(this.lineType, other.lineType)
+        c = CompareValues(this.lineType, other.lineType)
+        if (c !== 0) {
+            return c
+        }
+        return CompareValues(this.handle, other.handle)
     }
 
     IsIndexed() {

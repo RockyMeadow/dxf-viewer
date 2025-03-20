@@ -11,7 +11,24 @@ export type DxfSceneOptions = {
     wireframeMesh?: boolean
     suppressPaperSpace?: boolean
     textOptions?: TextRendererOptions
+    /** Override color for rendering entities */
     colorOverrides?: null | number | ColorOverride[]
+    /**
+     * Custom rendering rules for DXF entities.
+     * If not specified, default rendering rules are used.
+     * If specified, default rendering rules are applied to entities
+     * with certain type and layer name.
+     */
+    customEntityRenderingRules?: CustomEntityRenderingRule[]
+}
+
+export type CustomEntityRenderingRule = {
+    /** DXF entity type */
+    entityType: string
+    /** DXF layer name */
+    layerName: string
+    /** Separate render object */
+    separateRenderObject: boolean
 }
 
 export type ColorOverride =
