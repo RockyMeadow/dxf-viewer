@@ -230,12 +230,13 @@ export class TextRenderer {
      * @param {?number} params.vAlign Vertical text justification type code (group 73).
      * @param {number} params.color
      * @param {?string} params.layer
+     * @param {?string} params.handle
      * @param {number} params.fontSize Font size.
      * @returns {Generator<Entity>} Rendering entities. Currently just indexed triangles for each
      *  glyph.
      */
     *Render({text, startPos, endPos, rotation = 0, widthFactor = 1, hAlign = 0, vAlign = 0,
-             color, layer = null, fontSize}) {
+             color, layer = null, handle = null, fontSize}) {
         const block = new TextBlock(fontSize)
         for (const char of text) {
             const shape = this._GetCharShape(char)
@@ -244,7 +245,7 @@ export class TextRenderer {
             }
             block.PushChar(char, shape)
         }
-        yield* block.Render(startPos, endPos, rotation, widthFactor, hAlign, vAlign, color, layer)
+        yield* block.Render(startPos, endPos, rotation, widthFactor, hAlign, vAlign, color, layer, handle)
     }
 
     /**
@@ -1250,10 +1251,11 @@ class TextBlock {
      * @param {?number} vAlign Vertical text justification type code (group 73).
      * @param {number} color
      * @param {?string} layer
+     * @param {?string} handle
      * @returns {Generator<Entity>} Rendering entities. Currently just indexed triangles for each
      *  glyph.
      */
-    *Render(startPos, endPos, rotation, widthFactor, hAlign, vAlign, color, layer) {
+    *Render(startPos, endPos, rotation, widthFactor, hAlign, vAlign, color, layer, handle) {
 
         if (this.bounds === null) {
             return
@@ -1377,7 +1379,7 @@ class TextBlock {
                    type: Entity.Type.TRIANGLES,
                    vertices: glyph.vertices,
                    indices: glyph.shape.indices,
-                   layer, color: this.color ?? color
+                   layer, color: this.color ?? color, handle
                 })
             }
         }

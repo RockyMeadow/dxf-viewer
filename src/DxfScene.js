@@ -273,6 +273,35 @@ export class DxfScene {
         return !this.options.suppressPaperSpace || !entity.inPaperSpace
     }
 
+    /**
+     * Check if the DXF entity will be rendered in a separate object.
+     * @param entity {} DXF entity.
+     * @return {boolean} True if the entity will be rendered in a separate object.
+    */
+    _CheckForSeparatRenderObject(entity) {
+        const customEntityRenderingRules = this.options.customEntityRenderingRules
+
+        if (
+            !customEntityRenderingRules ||
+            !Array.isArray(customEntityRenderingRules) ||
+            (Array.isArray(customEntityRenderingRules) && customEntityRenderingRules.length === 0)
+        ) {
+            return false
+        }
+
+        return customEntityRenderingRules.some((rule) => {
+            if (!rule.hasOwnProperty("layerName") || !rule.hasOwnProperty("entityType")) {
+                return false
+            }
+
+            return (
+                rule.layerName === this._GetEntityLayer(entity) &&
+                rule.entityType === entity.type &&
+                rule.separateRenderObject === true
+            )
+        })
+    }
+
     async _FetchFonts(dxf) {
 
         function IsTextEntity(entity) {
@@ -1004,7 +1033,7 @@ export class DxfScene {
             hAlign: entity.halign,
             vAlign: entity.valign,
             widthFactor: entity.xScale,
-            color, layer
+            color, layer, handle: this._CheckForSeparatRenderObject(entity) ? entity.handle : null
         })
     }
 
@@ -2395,7 +2424,7 @@ export class DxfScene {
         }
         const key = new BatchingKey(entity.layer, blockCtx?.name,
                                     BatchingKey.GeometryType.INDEXED_TRIANGLES,
-                                    entity.color, 0)
+                                    entity.color, 0, entity.handle)
         const batch = this._GetBatch(key)
         /* A large solid hatch may exceed the chunk limit. */
         for (const triChunk of entity._IterateTriangleChunks()) {
@@ -3153,15 +3182,17 @@ export class Entity {
      * @param {?number[]} params.indices Indices for indexed geometry.
      * @param {?string} params.layer
      * @param {number} params.color
+     * @param {?string} params.handle
      * @param {?number} params.lineType
      * @param {Boolean} params.shape true if closed shape.
      */
-    constructor({type, vertices, indices = null, layer = null, color, lineType = 0,
+    constructor({type, vertices, indices = null, layer = null, handle = null, color, lineType = 0,
                  shape = false}) {
         this.type = type
         this.vertices = vertices
         this.indices = indices
         this.layer = layer
+        this.handle = handle
         this.color = color
         this.lineType = lineType
         this.shape = shape

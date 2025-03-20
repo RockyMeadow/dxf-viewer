@@ -10,13 +10,15 @@ export class BatchingKey {
      * @param {number} color Color ARGB value.
      * @param {?number} lineType Line type ID, null for non-lines. Zero is default type (solid
      *  line).
+     * @param {?string} handle Handle of the entity.
      */
-    constructor(layerName, blockName, geometryType, color, lineType) {
+    constructor(layerName, blockName, geometryType, color, lineType, handle) {
         this.layerName = layerName ?? null
         this.blockName = blockName ?? null
         this.geometryType = geometryType ?? null
         this.color = color
         this.lineType = lineType ?? null
+        this.handle = handle ?? null
     }
 
     /** Comparator function. Fields lexical order corresponds to the constructor arguments order.
@@ -39,7 +41,11 @@ export class BatchingKey {
         if (c !== 0) {
             return c
         }
-        return CompareValues(this.lineType, other.lineType)
+        c = CompareValues(this.lineType, other.lineType)
+        if (c !== 0) {
+            return c
+        }
+        return CompareValues(this.handle, other.handle)
     }
 
     IsIndexed() {
