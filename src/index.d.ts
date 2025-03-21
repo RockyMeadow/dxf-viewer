@@ -86,6 +86,7 @@ export declare class DxfViewer {
     GetCanvas(): HTMLCanvasElement
     GetLayers(): Iterable<LayerInfo>
     GetOrigin(): THREE.Vector2
+    GetLayerObjects(layerName: string): THREE.Object3D[]
     GetBounds(): {maxX: number, maxY: number, minX: number, minY: number} | null
     GetRenderer(): THREE.WebGLRenderer | null
     GetScene(): THREE.Scene
