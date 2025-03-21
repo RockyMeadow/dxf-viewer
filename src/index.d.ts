@@ -107,6 +107,7 @@ export declare class DxfViewer {
     GetDxf(): ParsedDxf
     GetLayers(nonEmptyOnly?: boolean): Iterable<LayerInfo>
     GetOrigin(): THREE.Vector2
+    GetLayerObjects(layerName: string): THREE.Object3D[]
     GetBounds(): {maxX: number, maxY: number, minX: number, minY: number} | null
     GetRenderer(): THREE.WebGLRenderer | null
     GetScene(): THREE.Scene
