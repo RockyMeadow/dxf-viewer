@@ -281,6 +281,11 @@ export class DxfViewer {
         this.Render()
     }
 
+    GetLayerObjects(name) {
+        const layer = this.layers.get(name)
+        return layer ? layer.objects : []
+    }
+
     /** Reset the viewer state. */
     Clear() {
         this._EnsureRenderer()
