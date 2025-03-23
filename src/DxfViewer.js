@@ -431,6 +431,7 @@ export class DxfViewer {
         }
         const controls = this.controls = new OrbitControls(this.camera, this.canvas)
         controls.enableRotate = false
+        controls.enableContextMenu = true
         controls.mouseButtons = {
             LEFT: three.MOUSE.PAN,
             MIDDLE: three.MOUSE.DOLLY

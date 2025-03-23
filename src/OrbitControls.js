@@ -85,6 +85,9 @@ export const OrbitControls = function ( object, domElement ) {
 	// the target DOM element for key events
 	this._domElementKeyEvents = null;
 
+	// enable context menu
+	this.enableContextMenu = false
+
 	//
 	// public methods
 	//
@@ -1198,7 +1201,7 @@ export const OrbitControls = function ( object, domElement ) {
 
 	function onContextMenu( event ) {
 
-		if ( scope.enabled === false ) return;
+		if ( scope.enabled === false  || scope.enableContextMenu === true ) return;
 
 		event.preventDefault();
 
