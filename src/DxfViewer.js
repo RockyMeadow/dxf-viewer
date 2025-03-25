@@ -416,6 +416,12 @@ export class DxfViewer {
         this.canvas.removeEventListener(EVENT_NAME_PREFIX + eventName, eventHandler)
     }
 
+    /** @return {{x: number,y :number}} Canvas pixel coordinates corresponding to the specified scene coordinates. */
+    SceneCoordToCanvas(x, y) {
+        const v = new three.Vector3(x, y, 1).project(this.camera)
+        return {x: (v.x + 1) * this.canvasWidth / 2, y: (-v.y + 1) * this.canvasHeight / 2}
+    }
+
     // /////////////////////////////////////////////////////////////////////////////////////////////
 
     _EnsureRenderer() {

@@ -98,6 +98,7 @@ export declare class DxfViewer {
     ShowLayer(name: string, show: boolean): void
     Subscribe(eventName: EventName, eventHandler: (event: any) => void): void
     Unsubscribe(eventName: EventName, eventHandler: (event: any) => void): void
+    SceneCoordToCanvas(x: number, y: number): {x: number, y: number}
 }
 
 export declare namespace DxfViewer {
