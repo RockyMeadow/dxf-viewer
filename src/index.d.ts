@@ -127,6 +127,7 @@ export declare class DxfViewer {
     CanvasToSceneCoord(x: number, y: number): {x: number, y: number}
     /** Canvas coordinates of a point in the scene; may lie outside the canvas. */
     SceneToCanvasCoord(x: number, y: number): {x: number, y: number}
+    SceneCoordToCanvas(x: number, y: number): {x: number, y: number}
 }
 
 export declare namespace DxfViewer {
