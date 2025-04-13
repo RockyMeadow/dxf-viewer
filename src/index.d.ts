@@ -31,11 +31,18 @@ export type DxfSceneOptions = {
 
 export type CustomEntityRenderingRule = {
     /** DXF entity type */
-    entityType: string
+    entityType?: string
     /** DXF layer name */
-    layerName: string
+    layerName?: string
     /** Separate render object */
     separateRenderObject: boolean
+}
+
+export interface RetainParsedEntityOption  {
+    /** Entity type to retain */
+    entityType: string
+    /** Layer name to retain */
+    layerName?: string
 }
 
 export type ColorOverride =
@@ -62,7 +69,7 @@ export type DxfViewerOptions = {
     blackWhiteInversion?: boolean,
     pointSize?: number,
     sceneOptions?: DxfSceneOptions,
-    retainParsedDxf?: boolean,
+    retainParsedDxf?: boolean | RetainParsedEntityOption | RetainParsedEntityOption[],
     preserveDrawingBuffer?: boolean,
     fileEncoding?: string
     renderer?: THREE.WebGLRenderer | null,
@@ -96,8 +103,25 @@ export type EventName = "loaded" | "cleared" | "destroyed" | "resized" | "pointe
  */
 export type ParsedDxf = any
 
+
+/**
+ * Only represents TEXT and MTEXT entities for now.
+ */
+export interface DxfEntity {
+    type: string
+    endPoint: THREE.Vector3
+    startPoint: THREE.Vector3
+    halign: number
+    layer: string
+    ownerhandler: string
+    styleName: string
+    text: string
+    textHeight: number
+}
+
 export declare class DxfViewer {
     constructor(domContainer: HTMLElement, options?: DxfViewerOptions | null)
+    GetObjects(selector?: (object: THREE.Object3D) => boolean): THREE.Mesh[]
     Clear(): void
     Destroy(): void
     FitView(minX: number, maxX: number, minY: number, maxY: number, padding?: number): void

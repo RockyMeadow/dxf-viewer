@@ -391,6 +391,18 @@ export class DxfViewer {
         return layer ? layer.objects : []
     }
 
+    GetObjects(selector = () => true) {
+        const objects = []
+        for (const layer of this.layers.values()) {
+            for (const obj of layer.objects) {
+                if (selector(obj)) {
+                    objects.push(obj)
+                }
+            }
+        }
+        return objects
+    }
+
     /** Reset the viewer state. */
     Clear() {
         this._EnsureRenderer()
@@ -588,9 +600,15 @@ export class DxfViewer {
     _OnPointerEvent(e) {
         const canvasRect = e.target.getBoundingClientRect()
         const canvasCoord = {x: e.clientX - canvasRect.left, y: e.clientY - canvasRect.top}
+        const normalizedCoord = {
+            x: (canvasCoord.x / this.canvasWidth) * 2 - 1,
+            y: -(canvasCoord.y / this.canvasHeight) * 2 + 1
+        }
+
         this._Emit(e.type, {
             domEvent: e,
             canvasCoord,
+            normalizedCoord,
             position: this.CanvasToSceneCoord(canvasCoord.x, canvasCoord.y)
         })
     }
