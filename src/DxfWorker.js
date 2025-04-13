@@ -159,7 +159,33 @@ export class DxfWorker {
         }
         const dxfScene = new DxfScene(options)
         await dxfScene.Build(dxf, fontFetchers)
-        return {scene: dxfScene.scene, dxf: options.retainParsedDxf === true ? dxf : undefined }
+
+        let parsedDxf = null
+
+        if (options.retainParsedDxf === true) {
+            parsedDxf = dxf
+        }
+        else if (options.retainParsedDxf && typeof options.retainParsedDxf === 'object') {
+            if (Array.isArray(options.retainParsedDxf)) {
+                dxf.entities = dxf.entities.filter(entity =>
+                    options.retainParsedDxf.some(filter =>
+                        (filter.entityType && entity.type === filter.entityType) ||
+                        (filter.layerName && entity.layer === filter.layerName)
+                    )
+                )
+
+                parsedDxf = dxf
+            } else if (options.retainParsedDxf.entityType || options.retainParsedDxf.layerName) {
+                dxf.entities = dxf.entities.filter(entity =>
+                    (options.retainParsedDxf.entityType && entity.type === options.retainParsedDxf.entityType) ||
+                    (options.retainParsedDxf.layerName && entity.layer === options.retainParsedDxf.layerName)
+                )
+
+                parsedDxf = dxf
+            }
+        }
+
+        return {scene: dxfScene.scene, dxf: parsedDxf }
     }
 
     _CreateFontFetchers(urls, progressCbk) {

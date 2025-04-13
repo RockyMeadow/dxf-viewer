@@ -235,13 +235,13 @@ export class DxfScene {
         }
 
         return customEntityRenderingRules.some((rule) => {
-            if (!rule.hasOwnProperty("layerName") || !rule.hasOwnProperty("entityType")) {
+            if (!rule.hasOwnProperty("layerName") && !rule.hasOwnProperty("entityType")) {
                 return false
             }
 
             return (
-                rule.layerName === this._GetEntityLayer(entity) &&
-                rule.entityType === entity.type &&
+                (!rule.hasOwnProperty("layerName") || rule.layerName === this._GetEntityLayer(entity)) &&
+                (!rule.hasOwnProperty("entityType") || rule.entityType === entity.type) &&
                 rule.separateRenderObject === true
             )
         })
