@@ -934,7 +934,7 @@ export class DxfScene {
             attachment: entity.attachmentPoint,
             lineSpacing: entity.lineSpacing,
             width: entity.width,
-            color, layer
+            color, layer, handle: this._CheckForSeparatRenderObject(entity) ? entity.handle : null
         })
     }
 

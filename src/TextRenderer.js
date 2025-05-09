@@ -187,18 +187,19 @@ export class TextRenderer {
      * @param {?number} lineSpacing Line spacing ratio relative to default one (5/3 of font size).
      * @param {number} color
      * @param {?string} layer
+     * @param {?string} handle
      * @return {Generator<Entity>} Rendering entities. Currently just indexed triangles for each
      *  glyph.
      */
     *RenderMText({formattedText, position, fontSize, width = null, rotation = 0, direction = null,
-                 attachment, lineSpacing = 1, color, layer = null}) {
+                 attachment, lineSpacing = 1, color, layer = null, handle = null}) {
         if (!fontSize) {
             fontSize = 1;
         }
         const box = new TextBox(fontSize, this._GetCharShape.bind(this))
         box.FeedText(formattedText)
         yield* box.Render(position, width, rotation, direction, attachment, lineSpacing, color,
-                          layer)
+                          layer, handle)
     }
 
     /** @return {CharShape} Shape for the specified character.
@@ -512,7 +513,7 @@ class TextBox {
         }
     }
 
-    *Render(position, width, rotation, direction, attachment, lineSpacing, color, layer) {
+    *Render(position, width, rotation, direction, attachment, lineSpacing, color, layer, handle) {
         for (const p of this.paragraphs) {
             p.BuildLines(width)
         }
@@ -630,7 +631,7 @@ class TextBox {
                     if (chunk.block) {
                         yield* chunk.block.Render(v, null, rotation, null,
                                                   HAlign.LEFT, VAlign.BASELINE,
-                                                  color, layer)
+                                                  color, layer, handle)
                     }
                 }
                 y -= lineHeight
