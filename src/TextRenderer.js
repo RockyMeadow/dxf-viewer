@@ -264,18 +264,19 @@ export class TextRenderer {
      *  size).
      * @param {number} params.color
      * @param {?string} params.layer
+     * @param {?string} params.handle
      * @returns {Generator<Entity>} Rendering entities. Currently just indexed triangles for each
      *  glyph.
      */
     *RenderMText({formattedText, position, fontSize, width = null, rotation = 0, direction = null,
-                 attachment, lineSpacing = 1, color, layer = null}) {
+                 attachment, lineSpacing = 1, color, layer = null, handle = null}) {
         if (!fontSize) {
             fontSize = 1
         }
         const box = new TextBox(fontSize, this._GetCharShape.bind(this))
         box.FeedText(formattedText)
         yield* box.Render(position, width, rotation, direction, attachment, lineSpacing, color,
-                          layer)
+                          layer, handle)
     }
 
     /** @returns {CharShape} Shape for the specified character.
@@ -687,7 +688,7 @@ class TextBox {
         }
     }
 
-    *Render(position, width, rotation, direction, attachment, lineSpacing, color, layer) {
+    *Render(position, width, rotation, direction, attachment, lineSpacing, color, layer, handle) {
         for (const p of this.paragraphs) {
             p.BuildLines(width)
         }
@@ -801,7 +802,7 @@ class TextBox {
                     if (chunkIdx === 0 || chunkIdx !== line.startChunkIdx) {
                         x += chunk.GetSpacingWidth()
                     }
-                    yield* chunk.Render(x, y, transform, rotation, color, layer)
+                    yield* chunk.Render(x, y, transform, rotation, color, layer, handle)
                 }
                 y -= lineHeight
             }
@@ -1115,9 +1116,9 @@ TextBox.Paragraph.Chunk = class {
      * @param {?string} layer
      * @returns {Generator<Entity>} Rendering entities.
      */
-    *Render(x, y, transform, rotation, color, layer) {
+    *Render(x, y, transform, rotation, color, layer, handle) {
         if (this.stack !== null) {
-            yield* this.stack.Render(x, y, transform, rotation, color, layer)
+            yield* this.stack.Render(x, y, transform, rotation, color, layer, handle)
             return
         }
         if (this.block === null) {
@@ -1125,7 +1126,7 @@ TextBox.Paragraph.Chunk = class {
         }
         const v = new Vector2(x, y)
         v.applyMatrix3(transform)
-        yield* this.block.RenderAtPenOrigin(v, rotation, color, layer)
+        yield* this.block.RenderAtPenOrigin(v, rotation, color, layer, handle)
     }
 }
 
@@ -1340,7 +1341,7 @@ class TextBlock {
         MatrixRotateCW(transform, rotation)
         MatrixTranslate(transform, insertionPos.x, insertionPos.y)
 
-        yield* this._RenderGlyphs(transform, color, layer)
+        yield* this._RenderGlyphs(transform, color, layer, handle)
     }
 
     /** Render the block with its pen origin - the start of the baseline, ahead of the first
@@ -1353,14 +1354,14 @@ class TextBlock {
      * @param {?string} layer
      * @returns {Generator<Entity>} Rendering entities.
      */
-    *RenderAtPenOrigin(position, rotation, color, layer) {
+    *RenderAtPenOrigin(position, rotation, color, layer, handle) {
         if (this.bounds === null) {
             return
         }
         const transform = new Matrix3()
         MatrixRotateCW(transform, rotation ? -rotation * Math.PI / 180 : 0)
         MatrixTranslate(transform, position.x, position.y)
-        yield* this._RenderGlyphs(transform, color, layer)
+        yield* this._RenderGlyphs(transform, color, layer, handle)
     }
 
     /**
@@ -1369,7 +1370,7 @@ class TextBlock {
      * @param {?string} layer
      * @returns {Generator<Entity>} Rendering entities.
      */
-    *_RenderGlyphs(transform, color, layer) {
+    *_RenderGlyphs(transform, color, layer, handle) {
         for (const glyph of this.glyphs) {
             if (glyph.vertices) {
                 for (const v of glyph.vertices) {
@@ -1443,7 +1444,7 @@ class TextStack {
      * @param {?string} layer
      * @returns {Generator<Entity>} Rendering entities.
      */
-    *Render(x, y, transform, rotation, color, layer) {
+    *Render(x, y, transform, rotation, color, layer, handle) {
         const size = this.partSize
         const width = this.GetWidth()
         const topWidth = this.top.GetCurrentPosition()
@@ -1468,8 +1469,8 @@ class TextStack {
 
         const Place = (px, py) => new Vector2(px, py).applyMatrix3(transform)
 
-        yield* this.top.RenderAtPenOrigin(Place(topX, topY), rotation, color, layer)
-        yield* this.bottom.RenderAtPenOrigin(Place(bottomX, bottomY), rotation, color, layer)
+        yield* this.top.RenderAtPenOrigin(Place(topX, topY), rotation, color, layer, handle)
+        yield* this.bottom.RenderAtPenOrigin(Place(bottomX, bottomY), rotation, color, layer, handle)
 
         if (this.divider === "^") {
             return
@@ -1489,7 +1490,8 @@ class TextStack {
             type: Entity.Type.LINE_SEGMENTS,
             vertices,
             layer,
-            color: this.color ?? color
+            color: this.color ?? color,
+            handle
         })
     }
 }
