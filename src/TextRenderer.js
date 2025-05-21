@@ -1,7 +1,7 @@
 import {Entity} from "./DxfScene.js"
 import {ShapePath} from "three/src/extras/core/ShapePath.js"
 import {ShapeUtils} from "three/src/extras/ShapeUtils.js"
-import {Matrix3, Vector2} from "three"
+import {Matrix3, Vector2, Color} from "three"
 import {MTextFormatParser} from "./MTextFormatParser.js"
 
 /** Regex for parsing special characters in text entities. */
@@ -158,11 +158,12 @@ export class TextRenderer {
      * @param {?string} layer
      * @param {?string} handle
      * @param {number} fontSize Font size.
+     * @param {boolean} strikethrough If true, then the text will be rendered with a strike through line.
      * @return {Generator<Entity>} Rendering entities. Currently just indexed triangles for each
      *  glyph.
      */
     *Render({text, startPos, endPos, rotation = 0, widthFactor = 1, hAlign = 0, vAlign = 0,
-             color, layer = null, handle = null, fontSize}) {
+             color, layer = null, handle = null, fontSize, strikethrough}) {
         const block = new TextBlock(fontSize)
         for (const char of text) {
             const shape = this._GetCharShape(char)
@@ -171,7 +172,7 @@ export class TextRenderer {
             }
             block.PushChar(char, shape)
         }
-        yield* block.Render(startPos, endPos, rotation, widthFactor, hAlign, vAlign, color, layer, handle)
+        yield* block.Render(startPos, endPos, rotation, widthFactor, hAlign, vAlign, color, layer, handle, strikethrough)
     }
 
     /**
@@ -188,18 +189,19 @@ export class TextRenderer {
      * @param {number} color
      * @param {?string} layer
      * @param {?string} handle
+     * @param {boolean} strikethrough If true, then the text will be rendered with a strike through line.
      * @return {Generator<Entity>} Rendering entities. Currently just indexed triangles for each
      *  glyph.
      */
     *RenderMText({formattedText, position, fontSize, width = null, rotation = 0, direction = null,
-                 attachment, lineSpacing = 1, color, layer = null, handle = null}) {
+                 attachment, lineSpacing = 1, color, layer = null, handle = null, strikethrough}) {
         if (!fontSize) {
             fontSize = 1;
         }
         const box = new TextBox(fontSize, this._GetCharShape.bind(this))
         box.FeedText(formattedText)
         yield* box.Render(position, width, rotation, direction, attachment, lineSpacing, color,
-                          layer, handle)
+                          layer, handle, strikethrough)
     }
 
     /** @return {CharShape} Shape for the specified character.
@@ -513,7 +515,7 @@ class TextBox {
         }
     }
 
-    *Render(position, width, rotation, direction, attachment, lineSpacing, color, layer, handle) {
+    *Render(position, width, rotation, direction, attachment, lineSpacing, color, layer, handle, strikethrough) {
         for (const p of this.paragraphs) {
             p.BuildLines(width)
         }
@@ -631,7 +633,7 @@ class TextBox {
                     if (chunk.block) {
                         yield* chunk.block.Render(v, null, rotation, null,
                                                   HAlign.LEFT, VAlign.BASELINE,
-                                                  color, layer, handle)
+                                                  color, layer, handle, strikethrough)
                     }
                 }
                 y -= lineHeight
@@ -975,10 +977,11 @@ class TextBlock {
      * @param color {number}
      * @param layer {?string}
      * @param handle {?string}
+     * @param {boolean} strikethrough If true, then the text will be rendered with a strike through line.
      * @return {Generator<Entity>} Rendering entities. Currently just indexed triangles for each
      *  glyph.
      */
-    *Render(startPos, endPos, rotation, widthFactor, hAlign, vAlign, color, layer, handle) {
+    *Render(startPos, endPos, rotation, widthFactor, hAlign, vAlign, color, layer, handle, strikethrough) {
 
         if (this.bounds === null) {
             return
@@ -1073,6 +1076,25 @@ class TextBlock {
                    layer, color: this.color ?? color, handle
                })
             }
+        }
+
+        if (strikethrough) {
+            const strikeY = (this.bounds.yMin + this.bounds.yMax) / 2;
+            const thickness = this.fontSize * 0.08; // 8% of font size for thickness
+            const halfThick = thickness / 2;
+            yield new Entity({
+                type: Entity.Type.TRIANGLES,
+                vertices: [
+                    new Vector2(this.bounds.xMin, strikeY - halfThick).applyMatrix3(transform),
+                    new Vector2(this.bounds.xMax, strikeY - halfThick).applyMatrix3(transform),
+                    new Vector2(this.bounds.xMax, strikeY + halfThick).applyMatrix3(transform),
+                    new Vector2(this.bounds.xMin, strikeY + halfThick).applyMatrix3(transform)
+                ],
+                indices: [0, 1, 2, 0, 2, 3],
+                color: new Color('#FDA4A5').getHex(),
+                layer,
+                handle: `tt::${handle}`
+            })
         }
     }
 }

@@ -5,6 +5,7 @@ import {MaterialKey} from "./MaterialKey.js"
 import {ColorCode, DxfScene} from "./DxfScene.js"
 import {OrbitControls} from "./OrbitControls.js"
 import {RBTree} from "./RBTree.js"
+import opentype from "opentype.js"
 
 
 /** Level in "message" events. */
@@ -187,6 +188,9 @@ export class DxfViewer {
 
         this.Clear()
 
+        // Store fonts for later use in text rendering
+        this._lastLoadFonts = fonts
+
         this.worker = new DxfWorker(workerFactory ? workerFactory() : null)
         const {scene, dxf} = await this.worker.Load(url, fonts, this.options, progressCbk)
         await this.worker.Destroy()
@@ -281,10 +285,6 @@ export class DxfViewer {
         this.Render()
     }
 
-    GetLayerObjects(name) {
-        const layer = this.layers.get(name)
-        return layer ? layer.objects : []
-    }
 
     GetObjects(selector = () => true) {
         const objects = []
@@ -317,6 +317,7 @@ export class DxfViewer {
         this.blocks.clear()
         this.materials.each(e => e.material.dispose())
         this.materials.clear()
+        this._lastLoadFonts = null
         this.SetView({x: 0, y: 0}, 2)
         this._Emit("cleared")
         this.Render()
@@ -714,6 +715,102 @@ export class DxfViewer {
             }
         }
         return color
+    }
+
+    /**
+     * Set strikethrough effect for text entities
+     * @param {string[]} handles - Array of entity handles to identify the text entities
+     * @param {boolean} strikethrough - Whether to enable strikethrough effect
+     * @returns {Promise<boolean>} True if at least one entity was found and updated
+     */
+    async SetTextStrikethrough(handles, strikethrough = true) {
+        this._EnsureRenderer()
+
+        if (!Array.isArray(handles) || handles.length === 0) {
+            return false
+        }
+
+        if (!this.parsedDxf) {
+            console.warn("No DXF data retained. Set retainParsedDxf option to true.")
+            return false
+        }
+
+        const modifiedDxfEntities = this.parsedDxf.entities
+            .filter((e) => handles.includes(e.handle))
+            .map((entity) => ({
+                ...entity,
+                strikethrough: strikethrough
+            }))
+
+        if (modifiedDxfEntities.length === 0) {
+            console.warn("No text entities found for the specified handles.")
+            return false
+        }
+
+        let fontFetchers = []
+        if (this._lastLoadFonts) {
+            fontFetchers = this._CreateFontFetchers(this._lastLoadFonts)
+        }
+
+        for (const dxfEntity of modifiedDxfEntities) {
+            if (!dxfEntity || (dxfEntity.type !== "TEXT" && dxfEntity.type !== "MTEXT")) {
+                continue
+            }
+
+            const renderedEntities = this.scene.children.filter(
+                (e) => e.name === dxfEntity.handle || e.name === `tt::${dxfEntity.handle}`
+            )
+
+
+
+            if (renderedEntities.length) {
+                this.scene.remove(...renderedEntities)
+            }
+        }
+
+        const dxfScene = new DxfScene(this.options, this.origin, this.bounds)
+
+        await dxfScene.Build({entities: modifiedDxfEntities}, fontFetchers)
+
+        for (const batch of dxfScene.scene.batches) {
+            if (
+                batch.key.blockName !== null &&
+                batch.key.geometryType !== BatchingKey.GeometryType.BLOCK_INSTANCE &&
+                batch.key.geometryType !== BatchingKey.GeometryType.POINT_INSTANCE
+            ) {
+                let block = this.blocks.get(batch.key.blockName)
+                if (!block) {
+                    block = new Block()
+                    this.blocks.set(batch.key.blockName, block)
+                }
+                block.PushBatch(new Batch(this, dxfScene.scene, batch))
+            }
+        }
+
+        for (const batch of dxfScene.scene.batches) {
+            this._LoadBatch(dxfScene.scene, batch, true)
+        }
+
+        this.Render()
+    }
+
+    /**
+     * Helper method to create font fetchers
+     * @private
+     */
+    _CreateFontFetchers(urls) {
+        function CreateFetcher(url) {
+            return async function () {
+                const data = await fetch(url).then((response) => response.arrayBuffer())
+                return opentype.parse(data)
+            }
+        }
+
+        const fetchers = []
+        for (const url of urls) {
+            fetchers.push(CreateFetcher(url))
+        }
+        return fetchers
     }
 }
 
