@@ -1,7 +1,7 @@
 import {Entity} from "./DxfScene.js"
 import {ShapePath} from "three/src/extras/core/ShapePath.js"
 import {ShapeUtils} from "three/src/extras/ShapeUtils.js"
-import {Matrix3, Vector2} from "three"
+import {Matrix3, Vector2, Color} from "three"
 import {MatrixRotateCW, MatrixScale, MatrixTranslate} from "./math/utils.js"
 import {MTextFormatParser} from "./MTextFormatParser.js"
 import {DefaultTextOptions} from "./TextRendererOptions.js"
@@ -231,12 +231,14 @@ export class TextRenderer {
      * @param {number} params.color
      * @param {?string} params.layer
      * @param {?string} params.handle
+     * @param {boolean} params.strikethrough If true, then the text will be rendered with a strike
+     *  through line.
      * @param {number} params.fontSize Font size.
      * @returns {Generator<Entity>} Rendering entities. Currently just indexed triangles for each
      *  glyph.
      */
     *Render({text, startPos, endPos, rotation = 0, widthFactor = 1, hAlign = 0, vAlign = 0,
-             color, layer = null, handle = null, fontSize}) {
+             color, layer = null, handle = null, fontSize, strikethrough}) {
         const block = new TextBlock(fontSize)
         for (const char of text) {
             const shape = this._GetCharShape(char)
@@ -245,7 +247,7 @@ export class TextRenderer {
             }
             block.PushChar(char, shape)
         }
-        yield* block.Render(startPos, endPos, rotation, widthFactor, hAlign, vAlign, color, layer, handle)
+        yield* block.Render(startPos, endPos, rotation, widthFactor, hAlign, vAlign, color, layer, handle, strikethrough)
     }
 
     /**
@@ -265,18 +267,20 @@ export class TextRenderer {
      * @param {number} params.color
      * @param {?string} params.layer
      * @param {?string} params.handle
+     * @param {boolean} params.strikethrough If true, then the text will be rendered with a strike
+     *  through line.
      * @returns {Generator<Entity>} Rendering entities. Currently just indexed triangles for each
      *  glyph.
      */
     *RenderMText({formattedText, position, fontSize, width = null, rotation = 0, direction = null,
-                 attachment, lineSpacing = 1, color, layer = null, handle = null}) {
+                 attachment, lineSpacing = 1, color, layer = null, handle = null, strikethrough}) {
         if (!fontSize) {
             fontSize = 1
         }
         const box = new TextBox(fontSize, this._GetCharShape.bind(this))
         box.FeedText(formattedText)
         yield* box.Render(position, width, rotation, direction, attachment, lineSpacing, color,
-                          layer, handle)
+                          layer, handle, strikethrough)
     }
 
     /** @returns {CharShape} Shape for the specified character.
@@ -688,7 +692,7 @@ class TextBox {
         }
     }
 
-    *Render(position, width, rotation, direction, attachment, lineSpacing, color, layer, handle) {
+    *Render(position, width, rotation, direction, attachment, lineSpacing, color, layer, handle, strikethrough) {
         for (const p of this.paragraphs) {
             p.BuildLines(width)
         }
@@ -802,7 +806,7 @@ class TextBox {
                     if (chunkIdx === 0 || chunkIdx !== line.startChunkIdx) {
                         x += chunk.GetSpacingWidth()
                     }
-                    yield* chunk.Render(x, y, transform, rotation, color, layer, handle)
+                    yield* chunk.Render(x, y, transform, rotation, color, layer, handle, strikethrough)
                 }
                 y -= lineHeight
             }
@@ -1116,9 +1120,9 @@ TextBox.Paragraph.Chunk = class {
      * @param {?string} layer
      * @returns {Generator<Entity>} Rendering entities.
      */
-    *Render(x, y, transform, rotation, color, layer, handle) {
+    *Render(x, y, transform, rotation, color, layer, handle, strikethrough) {
         if (this.stack !== null) {
-            yield* this.stack.Render(x, y, transform, rotation, color, layer, handle)
+            yield* this.stack.Render(x, y, transform, rotation, color, layer, handle, strikethrough)
             return
         }
         if (this.block === null) {
@@ -1126,7 +1130,7 @@ TextBox.Paragraph.Chunk = class {
         }
         const v = new Vector2(x, y)
         v.applyMatrix3(transform)
-        yield* this.block.RenderAtPenOrigin(v, rotation, color, layer, handle)
+        yield* this.block.RenderAtPenOrigin(v, rotation, color, layer, handle, strikethrough)
     }
 }
 
@@ -1253,10 +1257,12 @@ class TextBlock {
      * @param {number} color
      * @param {?string} layer
      * @param {?string} handle
+     * @param {boolean} strikethrough If true, then the text will be rendered with a strike through
+     *  line.
      * @returns {Generator<Entity>} Rendering entities. Currently just indexed triangles for each
      *  glyph.
      */
-    *Render(startPos, endPos, rotation, widthFactor, hAlign, vAlign, color, layer, handle) {
+    *Render(startPos, endPos, rotation, widthFactor, hAlign, vAlign, color, layer, handle, strikethrough) {
 
         if (this.bounds === null) {
             return
@@ -1341,7 +1347,7 @@ class TextBlock {
         MatrixRotateCW(transform, rotation)
         MatrixTranslate(transform, insertionPos.x, insertionPos.y)
 
-        yield* this._RenderGlyphs(transform, color, layer, handle)
+        yield* this._RenderGlyphs(transform, color, layer, handle, strikethrough)
     }
 
     /** Render the block with its pen origin - the start of the baseline, ahead of the first
@@ -1354,14 +1360,14 @@ class TextBlock {
      * @param {?string} layer
      * @returns {Generator<Entity>} Rendering entities.
      */
-    *RenderAtPenOrigin(position, rotation, color, layer, handle) {
+    *RenderAtPenOrigin(position, rotation, color, layer, handle, strikethrough) {
         if (this.bounds === null) {
             return
         }
         const transform = new Matrix3()
         MatrixRotateCW(transform, rotation ? -rotation * Math.PI / 180 : 0)
         MatrixTranslate(transform, position.x, position.y)
-        yield* this._RenderGlyphs(transform, color, layer, handle)
+        yield* this._RenderGlyphs(transform, color, layer, handle, strikethrough)
     }
 
     /**
@@ -1370,7 +1376,7 @@ class TextBlock {
      * @param {?string} layer
      * @returns {Generator<Entity>} Rendering entities.
      */
-    *_RenderGlyphs(transform, color, layer, handle) {
+    *_RenderGlyphs(transform, color, layer, handle, strikethrough) {
         for (const glyph of this.glyphs) {
             if (glyph.vertices) {
                 for (const v of glyph.vertices) {
@@ -1383,6 +1389,25 @@ class TextBlock {
                    layer, color: this.color ?? color, handle
                 })
             }
+        }
+
+        if (strikethrough) {
+            const strikeY = (this.bounds.yMin + this.bounds.yMax) / 2;
+            const thickness = this.fontSize * 0.08; // 8% of font size for thickness
+            const halfThick = thickness / 2;
+            yield new Entity({
+                type: Entity.Type.TRIANGLES,
+                vertices: [
+                    new Vector2(this.bounds.xMin, strikeY - halfThick).applyMatrix3(transform),
+                    new Vector2(this.bounds.xMax, strikeY - halfThick).applyMatrix3(transform),
+                    new Vector2(this.bounds.xMax, strikeY + halfThick).applyMatrix3(transform),
+                    new Vector2(this.bounds.xMin, strikeY + halfThick).applyMatrix3(transform)
+                ],
+                indices: [0, 1, 2, 0, 2, 3],
+                color: new Color('#FDA4A5').getHex(),
+                layer,
+                handle: `tt::${handle}`
+            })
         }
     }
 }
@@ -1444,7 +1469,7 @@ class TextStack {
      * @param {?string} layer
      * @returns {Generator<Entity>} Rendering entities.
      */
-    *Render(x, y, transform, rotation, color, layer, handle) {
+    *Render(x, y, transform, rotation, color, layer, handle, strikethrough) {
         const size = this.partSize
         const width = this.GetWidth()
         const topWidth = this.top.GetCurrentPosition()
@@ -1469,8 +1494,8 @@ class TextStack {
 
         const Place = (px, py) => new Vector2(px, py).applyMatrix3(transform)
 
-        yield* this.top.RenderAtPenOrigin(Place(topX, topY), rotation, color, layer, handle)
-        yield* this.bottom.RenderAtPenOrigin(Place(bottomX, bottomY), rotation, color, layer, handle)
+        yield* this.top.RenderAtPenOrigin(Place(topX, topY), rotation, color, layer, handle, strikethrough)
+        yield* this.bottom.RenderAtPenOrigin(Place(bottomX, bottomY), rotation, color, layer, handle, strikethrough)
 
         if (this.divider === "^") {
             return

@@ -121,7 +121,7 @@ function SplitQuad(corners) {
  */
 export class DxfScene {
 
-    constructor(options) {
+    constructor(options, origin = null, bounds = null) {
         this.options = Object.create(DxfScene.DefaultOptions)
         if (options) {
             Object.assign(this.options, options.sceneOptions)
@@ -130,7 +130,7 @@ export class DxfScene {
         /* Scene origin. All input coordinates are made local to this point to minimize precision
         * loss.
         */
-        this.origin = null
+        this.origin = origin
         /* RBTree<BatchingKey, RenderBatch> */
         this.batches = new RBTree((b1, b2) => b1.key.Compare(b2.key))
         /* Indexed by layer name, value is layer object from parsed DXF. */
@@ -144,7 +144,7 @@ export class DxfScene {
         this.fontStyles = new Map()
         /* Indexed by entity handle. */
         this.inserts = new Map()
-        this.bounds = null
+        this.bounds = bounds
         this.pointShapeBlock = null
         this.numBlocksFlattened = 0
         this.numEntitiesFiltered = 0
@@ -1033,7 +1033,8 @@ export class DxfScene {
             hAlign: entity.halign,
             vAlign: entity.valign,
             widthFactor: entity.xScale,
-            color, layer, handle: this._CheckForSeparatRenderObject(entity) ? entity.handle : null
+            color, layer, handle: this._CheckForSeparatRenderObject(entity) ? entity.handle : null,
+            strikethrough: entity.strikethrough,
         })
     }
 
@@ -1085,7 +1086,8 @@ export class DxfScene {
             attachment: entity.attachmentPoint,
             lineSpacing: entity.lineSpacing,
             width: entity.width,
-            color, layer, handle: this._CheckForSeparatRenderObject(entity) ? entity.handle : null
+            color, layer, handle: this._CheckForSeparatRenderObject(entity) ? entity.handle : null,
+            strikethrough: entity.strikethrough,
         })
         if (!transform) {
             yield* renderEntities
