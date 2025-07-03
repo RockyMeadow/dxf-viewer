@@ -96,7 +96,7 @@ export type LayerInfo = {
 }
 
 export type EventName = "loaded" | "cleared" | "destroyed" | "resized" | "pointerdown" |
-    "pointerup" | "pointermove" | "viewChanged" | "message"
+    "pointerup" | "pointermove" | "dblclick" | "viewChanged" | "message"
 
 /** A parsed DXF document. The bundled parser has no type model of its own, so its output is
  * deliberately untyped here.

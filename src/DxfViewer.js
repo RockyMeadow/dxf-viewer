@@ -136,6 +136,7 @@ export class DxfViewer {
         if (options.pointerMoveEvent) {
             this.canvas.addEventListener("pointermove", this._OnPointerEvent.bind(this))
         }
+        this.canvas.addEventListener("dblclick", this._OnPointerEvent.bind(this))
 
         this.Render()
 
@@ -530,6 +531,7 @@ export class DxfViewer {
      *  * "destroyed" - viewer instance destroyed.
      *  * "resized" - viewport size changed. Details: {width, height}
      *  * "pointerdown" - Details: {domEvent, position:{x,y}}, position is in scene coordinates.
+     *  * "dblclick" - Details: {domEvent, position:{x,y}}, position is in scene coordinates.
      *  * "pointerup"
      *  * "pointermove" - only emitted when the `pointerMoveEvent` option is set.
      *  * "viewChanged"
