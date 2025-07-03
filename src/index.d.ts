@@ -83,7 +83,7 @@ export type LayerInfo = {
 }
 
 export type EventName = "loaded" | "cleared" | "destroyed" | "resized" | "pointerdown" |
-    "pointerup" | "pointermove" | "viewChanged" | "message"
+    "pointerup" | "pointermove" | "dblclick" | "viewChanged" | "message"
 
 
 /**
