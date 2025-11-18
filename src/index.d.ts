@@ -99,6 +99,7 @@ export interface DxfEntity {
     styleName: string
     text: string
     textHeight: number
+    handle: string
 }
 
 export declare class DxfViewer {
