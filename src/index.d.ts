@@ -107,7 +107,7 @@ export declare class DxfViewer {
     parsedDxf: {
         header: Record<string, number | string | object>,
         table: any,
-        block: any,
+        blocks: object,
         entities: DxfEntity[]
     }
     GetObjects(selector?: (object: THREE.Object3D) => boolean): THREE.Mesh[]

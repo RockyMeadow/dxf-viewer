@@ -223,10 +223,11 @@ export class DxfScene {
      * @param entity {} DXF entity.
      * @return {boolean} True if the entity will be rendered in a separate object.
     */
-    _CheckForSeparatRenderObject(entity) {
+    _CheckForSeparateRenderObject(entity, hasBlockCtx = false) {
         const customEntityRenderingRules = this.options.customEntityRenderingRules
 
         if (
+            hasBlockCtx || // ignore entities inside blocks for now
             !customEntityRenderingRules ||
             !Array.isArray(customEntityRenderingRules) ||
             (Array.isArray(customEntityRenderingRules) && customEntityRenderingRules.length === 0)
@@ -910,7 +911,7 @@ export class DxfScene {
             hAlign: entity.halign,
             vAlign: entity.valign,
             widthFactor: entity.xScale,
-            color, layer, handle: this._CheckForSeparatRenderObject(entity) ? entity.handle : null,
+            color, layer, handle: this._CheckForSeparateRenderObject(entity, !!blockCtx) ? entity.handle : null,
             strikethrough: entity.strikethrough,
         })
     }
@@ -935,7 +936,7 @@ export class DxfScene {
             attachment: entity.attachmentPoint,
             lineSpacing: entity.lineSpacing,
             width: entity.width,
-            color, layer, handle: this._CheckForSeparatRenderObject(entity) ? entity.handle : null,
+            color, layer, handle: this._CheckForSeparateRenderObject(entity, !!blockCtx) ? entity.handle : null,
             strikethrough: entity.strikethrough,
         })
     }
