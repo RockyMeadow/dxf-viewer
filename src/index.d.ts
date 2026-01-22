@@ -122,6 +122,12 @@ export interface DxfEntity {
 
 export declare class DxfViewer {
     constructor(domContainer: HTMLElement, options?: DxfViewerOptions | null)
+    parsedDxf: {
+        header: Record<string, number | string | object>,
+        table: any,
+        blocks: object,
+        entities: DxfEntity[]
+    }
     GetObjects(selector?: (object: THREE.Object3D) => boolean): THREE.Mesh[]
     Clear(): void
     Destroy(): void
