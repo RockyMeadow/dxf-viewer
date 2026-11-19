@@ -275,9 +275,9 @@ export class DxfScene {
 
     /**
      * Check if the DXF entity will be rendered in a separate object.
-     * @param entity {} DXF entity.
-     * @return {boolean} True if the entity will be rendered in a separate object.
-    */
+     * @param {object} entity DXF entity.
+     * @returns {boolean} True if the entity will be rendered in a separate object.
+     */
     _CheckForSeparateRenderObject(entity, hasBlockCtx = false) {
         const customEntityRenderingRules = this.options.customEntityRenderingRules
 

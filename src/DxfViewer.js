@@ -459,7 +459,7 @@ export class DxfViewer {
 
     /** Set the view to a centre point and a width, the height following from the canvas aspect
      *  ratio.
-     * @param {three.Vector3} center View centre in scene coordinates. Only X and Y are used.
+     * @param {{x: number, y: number}} center View centre in scene coordinates.
      * @param {number} width View width in scene coordinates.
      */
     SetView(center, width) {
@@ -556,7 +556,12 @@ export class DxfViewer {
         this.canvas.removeEventListener(EVENT_NAME_PREFIX + eventName, eventHandler)
     }
 
-    /** @return {{x: number,y :number}} Canvas pixel coordinates corresponding to the specified scene coordinates. */
+    /**
+     * @param {number} x Scene X coordinate.
+     * @param {number} y Scene Y coordinate.
+     * @returns {{x: number, y: number}} Canvas pixel coordinates corresponding to the specified
+     *  scene coordinates.
+     */
     SceneCoordToCanvas(x, y) {
         const v = new three.Vector3(x, y, 1).project(this.camera)
         return {x: (v.x + 1) * this.canvasWidth / 2, y: (-v.y + 1) * this.canvasHeight / 2}
